@@ -1,1 +1,3 @@
-https://github.com/PrynAI 
+https://lilianweng.github.io/posts/2023-06-23-agent/
+
+https://lilianweng.github.io/posts/2024-04-12-diffusion-video/
