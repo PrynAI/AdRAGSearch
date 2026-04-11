@@ -15,6 +15,7 @@ class Config:
 
     # Model Configuration
     LLM_MODEL = "openai:gpt-5-nano"
+    EMBEDDING_MODEL = "text-embedding-3-small"
 
     # Document Processing
     CHUNK_SIZE = 500
@@ -41,3 +42,16 @@ class Config:
 
         os.environ["OPENAI_API_KEY"] = cls.OPENAI_API_KEY
         return init_chat_model(cls.LLM_MODEL)
+
+    @classmethod
+    def get_embeddings(cls):
+        """Initialize and return the configured embedding model."""
+        if not cls.OPENAI_API_KEY:
+            raise ValueError(
+                "Missing OpenAI API key. Set OPENAI_API_KEY in your environment or .env file."
+            )
+
+        from langchain_openai import OpenAIEmbeddings
+
+        os.environ["OPENAI_API_KEY"] = cls.OPENAI_API_KEY
+        return OpenAIEmbeddings(model=cls.EMBEDDING_MODEL)

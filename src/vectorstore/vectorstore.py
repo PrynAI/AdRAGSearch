@@ -1,20 +1,20 @@
-""" Vectore store module for  document embedding  and retrieval """
-
+"""Vector store module for document embedding and retrieval."""
 
 from typing import List
-from langchain_community.vectorstores import FAISS 
+
+from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
 
 class VectorStore:
-    """ Manages vector store operations """
+    """Manages vector store operations."""
 
-    def __init__(self):
-        """ Initiatilize vector store with OpenAI embeddings"""
-        self.embedding=OpenAIEmbeddings()
-        self.vectorstore=None
-        self.retriever=None
+    def __init__(self, embedding: OpenAIEmbeddings | None = None):
+        """Initialize the vector store with an embedding model."""
+        self.embedding = embedding or OpenAIEmbeddings()
+        self.vectorstore = None
+        self.retriever = None
     
     def create_vectorstore(self, documents: List[Document]):
         """

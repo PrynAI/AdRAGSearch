@@ -117,7 +117,7 @@ def initialize_rag():
             chunk_size=Config.CHUNK_SIZE,
             chunk_overlap=Config.CHUNK_OVERLAP
         )
-        vector_store = VectorStore()
+        vector_store = VectorStore(embedding=Config.get_embeddings())
         
         # Load both configured URLs and local PDFs.
         sources = [*Config.DEFAULT_URLS, Config.DEFAULT_PDF_DIR]
