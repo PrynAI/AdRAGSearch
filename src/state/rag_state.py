@@ -1,12 +1,15 @@
-""" RAG state definistion for LangGraph"""
+"""RAG state definition for the LangGraph workflow."""
 
 from typing import List
-from pydantic import BaseModel
+
 from langchain_core.documents import Document
+from pydantic import BaseModel, Field
+
 
 class RAGState(BaseModel):
-    ''' State object for RAG workflow'''
+    """State object for the RAG workflow."""
 
-    question:str
-    retrieved_docs:List[Document]=[]
-    answer:str=""
+    question: str
+    retrieved_docs: List[Document] = Field(default_factory=list)
+    external_sources: List[dict[str, str]] = Field(default_factory=list)
+    answer: str = ""

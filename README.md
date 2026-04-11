@@ -1,6 +1,6 @@
 # AdRAGSearch
 
-AdRAGSearch is a lightweight agentic RAG application for asking questions over a mixed knowledge base of web pages and local documents. The current MVP combines Streamlit for the user interface, LangChain for document processing and tool integration, FAISS for semantic retrieval, LangGraph for workflow orchestration, and OpenAI models for embeddings and answer generation.
+AdRAGSearch is a lightweight single-agent, tool-augmented RAG application for asking questions over a mixed knowledge base of web pages and local documents. The current MVP combines Streamlit for the user interface, LangChain for document processing and tool integration, FAISS for semantic retrieval, LangGraph for workflow orchestration, and OpenAI models for embeddings and answer generation.
 
 This repository is a strong foundation for document Q&A assistants, internal knowledge search, research copilots, and retrieval-based AI product experiments.
 
@@ -17,6 +17,8 @@ That content is split into chunks, embedded with OpenAI embeddings, stored in a 
 - a local retriever tool for indexed project documents
 - a Wikipedia tool for broader public knowledge
 
+The system is agentic because the responder can choose tools, but it is still a single-agent design rather than a multi-agent system.
+
 The result is a simple but useful hybrid RAG experience: grounded answers from your indexed corpus, with the ability to reach beyond it when the question needs general context.
 
 ## Concepts Behind The Repo
@@ -27,7 +29,7 @@ RAG improves LLM answers by retrieving relevant source content first, then using
 
 ### Agentic RAG
 
-This is not just a single prompt over retrieved documents. The answering step is tool-enabled. The model can decide whether to use:
+This repo implements single-agent agentic RAG rather than multi-agent orchestration. The answering step is tool-enabled. The model can decide whether to use:
 
 - the internal retriever for indexed documents
 - Wikipedia for general background knowledge
@@ -49,14 +51,14 @@ This makes the application easier to extend later with grading, query rewriting,
 - Recursive chunking for document preprocessing
 - OpenAI embeddings with FAISS-backed semantic retrieval
 - LangGraph-based orchestration for a clean RAG execution flow
-- Tool-using answer generation with both retriever and Wikipedia access
-- Streamlit UI with question input, answer display, source preview, and recent search history
+- Single-agent answer generation with tool access to both the retriever and Wikipedia
+- Streamlit UI with question input, answer display, source previews, and recent search history
 - Cached system initialization to avoid rebuilding the full pipeline on every interaction
 
 ## Benefits
 
 - Better grounded answers than plain chat because responses can use indexed source material
-- More flexible than basic RAG because the answering agent can also use Wikipedia for general knowledge
+- More flexible than basic RAG because the single answering agent can use both indexed documents and Wikipedia when needed
 - Easy to understand and demo because the architecture is small and the UI is simple
 - Easy to extend into a more advanced AI product because ingestion, retrieval, state, graph, and UI are already separated into modules
 - Useful as an MVP foundation for internal search assistants, document copilots, and research exploration tools
@@ -75,7 +77,7 @@ flowchart TD
     H --> I[Tool-enabled agent]
     I --> J[Retriever tool]
     I --> K[Wikipedia tool]
-    H --> L[Final answer + retrieved docs]
+    H --> L[Final answer + source references]
     L --> M[Streamlit UI]
 ```
 
@@ -93,7 +95,8 @@ flowchart TD
    - a Wikipedia lookup tool
 7. The Streamlit UI sends a user question into the graph and displays:
    - the final answer
-   - previews of retrieved source chunks
+   - indexed document chunks used for retrieval
+   - external references captured during tool use
    - recent search history
 
 ## UI Summary
@@ -104,7 +107,7 @@ The current UI is intentionally minimal and demo-friendly:
 - Automatic startup and document indexing on first load
 - A single search box and submit button
 - Answer output shown immediately after processing
-- A source-document expander showing retrieved chunk previews
+- A `Sources Used` expander showing indexed document chunks and external references
 - A recent-search section showing the last few queries and answers
 
 This makes the project easy to demo without introducing extra UI complexity.
@@ -207,14 +210,14 @@ Most important settings live in `src/config/config.py`:
 
 ## Current Scope And Limitations
 
-. The current implementation is intentionally small and focused.
+The current implementation is intentionally small and focused.
 
 - The vector store is built at startup and kept in memory rather than persisted
 - Source selection is configuration-driven, not user-upload driven
-- The UI shows retrieved document chunks, but it does not separately expose Wikipedia tool traces
+- External source capture currently covers Wikipedia lookups, not general live internet search
 - There is no authentication, database, background job system, or observability layer
 - There are no automated tests in the repo yet
--  `streamlit_app.py` is the primary entry point
+- `streamlit_app.py` is the primary entry point
 
 ## Why This Repo Is Useful
 
@@ -223,7 +226,7 @@ If you want to publish a clean GitHub project that demonstrates practical AI pro
 - document ingestion from multiple source types
 - semantic retrieval with embeddings and FAISS
 - explicit workflow orchestration with LangGraph
-- agent-style tool use layered on top of RAG
+- single-agent tool use layered on top of RAG
 - a working UI that makes the system immediately demoable
 
-That combination makes it a good showcase project for agentic AI, applied RAG, and end-to-end product prototyping.
+That combination makes it a good showcase project for single-agent agentic AI, applied RAG, and end-to-end product prototyping.

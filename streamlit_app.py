@@ -41,6 +41,72 @@ def init_session_state():
     if 'history' not in st.session_state:
         st.session_state.history = []
 
+def _source_name(source: str) -> str:
+    """Extract a readable name from a file path or URL."""
+    if not source:
+        return "Unknown source"
+    return source.replace("\\", "/").rstrip("/").split("/")[-1] or source
+
+def _render_indexed_documents(documents):
+    """Render indexed document chunks with source metadata."""
+    st.markdown("#### Indexed Documents")
+    for i, doc in enumerate(documents, 1):
+        metadata = getattr(doc, "metadata", {}) or {}
+        source = str(metadata.get("source", "")).strip()
+        title = metadata.get("title") or _source_name(source) or f"Document {i}"
+        page_label = metadata.get("page_label")
+        page = metadata.get("page")
+
+        st.markdown(f"**{i}. {title}**")
+        if source.startswith(("http://", "https://")):
+            st.markdown(f"[Open source]({source})")
+        elif source:
+            st.caption(f"Source: {source}")
+
+        if page_label:
+            st.caption(f"Page: {page_label}")
+        elif isinstance(page, int):
+            st.caption(f"Page: {page + 1}")
+
+        preview = doc.page_content.strip()
+        if len(preview) > 400:
+            preview = preview[:400].rstrip() + "..."
+        st.text_area(
+            f"Indexed Document {i}",
+            preview,
+            height=120,
+            disabled=True,
+            key=f"indexed_doc_{i}_{source}_{page_label or page or 'na'}",
+        )
+
+def _render_external_sources(external_sources):
+    """Render external references collected during tool use."""
+    st.markdown("#### External References")
+    for i, source in enumerate(external_sources, 1):
+        source_type = source.get("source_type", "external").title()
+        title = source.get("title") or f"External Source {i}"
+        url = source.get("url", "")
+        query = source.get("query", "")
+        snippet = source.get("snippet", "")
+
+        st.markdown(f"**{i}. {title}**")
+        if query:
+            st.caption(f"{source_type} lookup for: {query}")
+        else:
+            st.caption(source_type)
+
+        if url:
+            st.markdown(f"[Open source]({url})")
+
+        if snippet:
+            st.text_area(
+                f"External Reference {i}",
+                snippet,
+                height=120,
+                disabled=True,
+                key=f"external_ref_{i}_{title}_{url}",
+            )
+
 @st.cache_resource
 def initialize_rag():
     """Initialize the RAG system (cached)"""
@@ -123,15 +189,18 @@ def main():
                 st.markdown("### 💡 Answer")
                 st.success(result['answer'])
                 
-                # Show retrieved docs in expander
-                with st.expander("📄 Source Documents"):
-                    for i, doc in enumerate(result['retrieved_docs'], 1):
-                        st.text_area(
-                            f"Document {i}",
-                            doc.page_content[:300] + "...",
-                            height=100,
-                            disabled=True
-                        )
+                # Show local and external sources in expander
+                retrieved_docs = result.get('retrieved_docs', [])
+                external_sources = result.get('external_sources', [])
+                with st.expander("📄 Sources Used"):
+                    if retrieved_docs:
+                        _render_indexed_documents(retrieved_docs)
+
+                    if external_sources:
+                        _render_external_sources(external_sources)
+
+                    if not retrieved_docs and not external_sources:
+                        st.info("No source details were captured for this answer.")
                 
                 st.caption(f"⏱️ Response time: {elapsed_time:.2f} seconds")
     
