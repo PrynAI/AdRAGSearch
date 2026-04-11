@@ -40,6 +40,12 @@ class RAGNodes:
                 title=meta.get("title") or meta.get("source") or f"doc_{i}"
                 merged.append(f"[{i}] {title}\n{d.page_content}")
             return "\n\n".join(merged)
+
+        wiki = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper(top_k_results=3, lang="en"))
+
+        def wikipedia_tool_fn(query: str) -> str:
+            """Run a Wikipedia lookup with a simple signature for agent tooling."""
+            return wiki.run(query)
         
         retriever_tool=Tool(
             name="retriever",
@@ -47,11 +53,10 @@ class RAGNodes:
             func=retriever_tool_fn
         )
 
-        wiki=WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper(top_k_results=3,lang="en"))
         wikipedia_tool = Tool(
             name="wikipedia",
             description="Search Wikipedia for general knowledge.",
-            func=wiki.run,
+            func=wikipedia_tool_fn,
         )
         return [retriever_tool, wikipedia_tool]
 

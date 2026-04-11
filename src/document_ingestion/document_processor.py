@@ -1,110 +1,80 @@
-""" Document processing module for loading and splitting documents"""
+"""Document loading and splitting utilities."""
 
-from langchain_text_splitters  import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
-from typing import Union,List
 from pathlib import Path
+from typing import List, Union
+
 from langchain_community.document_loaders import (
-WebBaseLoader,
-PyMuPDFLoader,
-PyPDFDirectoryLoader,
-TextLoader
+    PyMuPDFLoader,
+    PyPDFDirectoryLoader,
+    TextLoader,
+    WebBaseLoader,
 )
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 
 class DocumentProcessor:
-    """ Handle Document loading and processing(splitting into chunks)"""
-    def __init__(self,chunk_size:int=500,chunk_overlap:int=50):
-        """
-        Initialize document processor
+    """Handle document loading and chunking."""
 
-        Args:
-            chunk_size: size of text chunks
-            chunk_ovrlap:Overalap between chunks
-        """
-        self.chunk_size=chunk_size
-        self.chunk_overlap=chunk_overlap
-        self.splitter=RecursiveCharacterTextSplitter(
+    def __init__(self, chunk_size: int = 500, chunk_overlap: int = 50):
+        """Initialize the document processor."""
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
+            chunk_overlap=chunk_overlap,
         )
 
-    def load_from_url(self, url:str)->List[Document]:
-        """ Load documents(s) from a URL"""
-        loader=WebBaseLoader(url)
+    def load_from_url(self, url: str) -> List[Document]:
+        """Load documents from a URL."""
+        loader = WebBaseLoader(url)
         return loader.load()
-    
-    def load_from_pdf_dir(self, directory:Union[str,Path])->List[Document]:
-        """ Load documents from all PDFs inside a directory"""
-        loader=PyPDFDirectoryLoader(str(directory))
+
+    def load_from_pdf_dir(self, directory: Union[str, Path]) -> List[Document]:
+        """Load documents from all PDFs inside a directory."""
+        loader = PyPDFDirectoryLoader(str(directory))
         return loader.load()
-    
-    def load_from_txt(self,file_path:Union[str,Path])->List[Document]:
-        """ Load document(s) from a TXT file"""
-        loader=TextLoader(str(file_path), encoding="utf-8")
+
+    def load_from_pdf(self, file_path: Union[str, Path]) -> List[Document]:
+        """Load documents from a single PDF file."""
+        loader = PyMuPDFLoader(str(file_path))
         return loader.load()
-    
-    def load_from_pdf(self,file_path:Union[str,Path])->List[Document]:
-        """ Load documents(s) from a pdf file"""
-        loader=PyPDFDirectoryLoader(str("data"))
+
+    def load_from_txt(self, file_path: Union[str, Path]) -> List[Document]:
+        """Load documents from a text file."""
+        loader = TextLoader(str(file_path), encoding="utf-8")
         return loader.load()
-    
-    
-    def load_documents(self,sources:List[str])->List[Document]:
-        """ Load documents from URLs , PDF directories, or TXT files
 
-        Args:
-            sources:List of URLs, PDF filder paths, or TXT file paths
+    def load_source(self, source: Union[str, Path]) -> List[Document]:
+        """Load documents from a single source."""
+        source_str = str(source)
+        if source_str.startswith(("http://", "https://")):
+            return self.load_from_url(source_str)
 
-            Returns;
-            List of loaded documents
-        
-        """
+        path = Path(source)
+        if path.is_dir():
+            return self.load_from_pdf_dir(path)
+        if path.is_file() and path.suffix.lower() == ".pdf":
+            return self.load_from_pdf(path)
+        if path.is_file() and path.suffix.lower() == ".txt":
+            return self.load_from_txt(path)
 
-        docs:List[Document]=[]
-        for src in sources:
-            if src.startswith("http://") or src.startswith("https://"):
-                docs.extend(self.load_from_url(src))
+        raise ValueError(
+            f"Unsupported source: {source_str}. Expected a URL, .pdf file, .txt file, or directory."
+        )
 
-                path=Path("data")
-                if path.is_dir(): #PDF directory
-                    docs.extend(self.load_from_pdf_dir(path))
-                elif path.suffix.lower()==".txt":
-                    docs.extend(self.load_from_txt(path))
-                else:
-                    raise ValueError(
-                        f"Unsupported source type: {src}."
-                        "user URL, .txt file or PDF directory."
-                    )
-                return docs
-            
-    def split_documents(self, documents: List[Document])->List[Document]:
-            """
-            split documents into chunks
+    def load_documents(self, sources: List[Union[str, Path]]) -> List[Document]:
+        """Load documents from multiple sources."""
+        docs: List[Document] = []
+        for source in sources:
+            docs.extend(self.load_source(source))
+        return docs
 
-            Args:
-            documents:List of documents to split
+    def split_documents(self, documents: List[Document]) -> List[Document]:
+        """Split documents into chunks."""
+        return self.splitter.split_documents(documents)
 
-            Returns:
-            List of split documents
-            
-            """
-            return self.splitter.split_documents(documents)
-        
-    def process_urls(self, urls:List[str])->List[Document]:
-            """
-            Complete pipeline to load and split documents
-
-            Args:
-            urls:List of URLs to process
-
-            Returns:
-            List of processed document chunks
-            """
-
-            docs=self.load_documents(urls)
-            return self.split_documents(docs)
-                
-
-
-    
-
+    def process_sources(self, sources: List[Union[str, Path]]) -> List[Document]:
+        """Load and split documents from mixed sources."""
+        docs = self.load_documents(sources)
+        return self.split_documents(docs)
